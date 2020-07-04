@@ -44,6 +44,7 @@ LedControl mydisplay = LedControl(26, 25, 24, 3);
 bool uhf_LastFunction;
 bool vhfAm_LastMode;
 bool vhfFm_LastMode;
+bool allRadiosOff;
 
 // Teensy++ 2.0: 46 IO
 
@@ -70,6 +71,7 @@ void setup() {
   uhf_LastFunction = 0;
   vhfAm_LastMode = 0;
   vhfFm_LastMode = 0;
+  allRadiosOff = true;
   
   initLCD(0);
   initLCD(1);
@@ -82,17 +84,26 @@ void ConsiderRestartDisplay()
 {
   if( uhf_LastFunction == 0 && vhfAm_LastMode == 0 && vhfFm_LastMode == 0 )
   {
-    // All radios are off - Re-init the whole display controller
-    mydisplay = LedControl(26, 25, 24, 3);
+    if( !allRadiosOff )
+    {
+      // All radios are off - Note that so when one comes back on we can re-init the whole stack
+      allRadiosOff = true;
 
-    initLCD(0);
-    initLCD(1);
-    initLCD(2);
+      // Re-initialize the display controller.  This is a trick to give me an OTF method to resync the controller because mine seem to be flakey.
+      mydisplay = LedControl(26, 25, 24, 3);
+      initLCD(0);
+      initLCD(1);
+      initLCD(2);
+    }
+  }
+  else
+  {
+    // At least one radio is on.  Note that
+    allRadiosOff = false;
   }
 }
 
-/*
-Your main loop needs to pass data from the DCS-BIOS export
+HJUIOP;'ur main loop needs to pass data from the DCS-BIOS export
 stream to the parser object you instantiated above.
 
 It also needs to call DcsBios::PollingInput::pollInputs()
@@ -110,15 +121,15 @@ void onUhfFunctionChange(unsigned int newValue) {
     {
       // Radio is OFF
       mydisplay.shutdown(0, true);
-      uhf_LastFunction = newValue;
-      ConsiderRestartDisplay();
     }
     else if( uhf_LastFunction == 0 )
     {
       // Radio is ON, but wasn't before
       mydisplay.shutdown(0, false);
-      uhf_LastFunction = newValue;
     }
+
+    uhf_LastFunction = newValue;
+    ConsiderRestartDisplay();
 }
 DcsBios::IntegerBuffer uhfFunctionBuffer(0x117c, 0x000c, 2, onUhfFunctionChange);
 
@@ -150,19 +161,8 @@ DcsBios::StringBuffer<2> uhfPresetBuffer(0x1188, onUhfPresetChange);
 // VHF AM (Front)
 
 void onVhfamModeChange(unsigned int newValue) {
-    if(newValue == 0)
-    {
-      // Radio is OFF
-      mydisplay.shutdown(1, true);
-      vhfAm_LastMode = newValue;
-      ConsiderRestartDisplay();
-    }
-    else if( vhfAm_LastMode == 0 )
-    {
-      // Radio is ON, but wasn't before
-      mydisplay.shutdown(1, false);
-      vhfAm_LastMode = newValue;
-    }
+    vhfAm_LastMode = newValue;
+    ConsiderRestartDisplay();
 }
 DcsBios::IntegerBuffer vhfamModeBuffer(0x1186, 0x0300, 8, onVhfamModeChange);
 
@@ -233,19 +233,8 @@ DcsBios::IntegerBuffer vhfamFreq4RotBuffer(0x12ba, 0x00ff, 0, onVhfamFreq4RotCha
 // VHF FM (Rear)
 
 void onVhffmModeChange(unsigned int newValue) {
-    if(newValue == 0)
-    {
-      // Radio is OFF
-      mydisplay.shutdown(2, true);
-      vhfFm_LastMode = newValue;
-      ConsiderRestartDisplay();
-    }
-    else if( vhfFm_LastMode == 0 )
-    {
-      // Radio is ON, but wasn't before
-      mydisplay.shutdown(2, false);
-      vhfFm_LastMode = newValue;
-    }
+    vhfFm_LastMode = newValue;
+    ConsiderRestartDisplay();
 }
 DcsBios::IntegerBuffer vhffmModeBuffer(0x1194, 0x0060, 5, onVhffmModeChange);
 
