@@ -108,8 +108,8 @@ namespace DcsBios {
 
 DcsBios::Switch2Pos nmspAbleStow("NMSP_ABLE_STOW", 11, true);
 
-DcsBios::McPitRotaryEncoder hsiCrs("HSI_CRS", "-1000", "+1000", "-5000", "+5000", 1, 0, 6);
-DcsBios::McPitRotaryEncoder hsiHdg("HSI_HDG", "-1000", "+1000", "-5000", "+5000", 36, 37, 6);
+DcsBios::McPitRotaryEncoder hsiCrs("HSI_CRS_KNOB", "-1000", "+1000", "-5000", "+5000", 1, 0, 6);
+DcsBios::McPitRotaryEncoder hsiHdg("HSI_HDG_KNOB", "-1000", "+1000", "-5000", "+5000", 36, 37, 6);
 
 DcsBios::McPitRotaryEncoder altSetPressure("ALT_SET_PRESSURE", "-15000", "+15000", "-80000", "+80000", 18, 19, 6);
 
