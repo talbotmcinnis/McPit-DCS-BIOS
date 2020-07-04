@@ -1,13 +1,16 @@
-#include <LedControl.h>
+//#define DCSBIOS_IRQ_SERIAL
+#define DCSBIOS_DEFAULT_SERIAL
 
-#include <DcsBios.h>
-#include <Servo.h>
-
-// For C:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\usb_serial_hid\usb_private.h
+// Because we need each device to be unique, we must change the product_ID in C:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\usb_serial_hid\usb_private.h
+// before each compilation
 /*
 #define STR_PRODUCT             L"McPit - UHF"
-#define PRODUCT_ID		0x0492
+#define PRODUCT_ID    0x0492  // McPit - UHF
 */
+
+#include <LedControl.h>
+
+#include <DcsBios.h> // Originally build for DCS Bios 0.1.x  Update For 0.2.11
 
 /**** UHF Radio 25D 1A ****/
 DcsBios::RotaryEncoder uhf100mhzSel("UHF_100MHZ_SEL", "DEC", "INC", 4, 3);
@@ -20,7 +23,8 @@ DcsBios::RotaryEncoder uhfPresetSel("UHF_PRESET_SEL", "DEC", "INC", 15, 14);
 const byte uhfFunctionPins[4] = {20, 19, 18, 27};
 DcsBios::SwitchMultiPos uhfFunction("UHF_FUNCTION", uhfFunctionPins, 4);
 
-DcsBios::ActionButton uhfLoadToggle("UHF_LOAD", "TOGGLE", 16);
+DcsBios::Switch2Pos uhfLoad("UHF_LOAD", 16); // Fixed 2020-05-15
+
 const byte uhfModePins[3] = {0, 1, 2};
 DcsBios::SwitchMultiPos uhfMode("UHF_MODE", uhfModePins, 3);
 DcsBios::Switch2Pos uhfSquelch("UHF_SQUELCH", 21);
@@ -37,49 +41,54 @@ DcsBios::SwitchMultiPos vhfamMode("VHFAM_MODE", vhfamModePins, 3);
 // inputs: DIN pin, CLK pin, LOAD pin. number of chips
 LedControl mydisplay = LedControl(26, 25, 24, 3);
 
+bool uhf_LastFunction;
+bool vhfAm_LastMode;
+bool vhfFm_LastMode;
+
 // Teensy++ 2.0: 46 IO
 
 /* Instantiate a ProtocolParser object to parse the DCS-BIOS export stream */
 DcsBios::ProtocolParser parser;
 
-void setup() {
-  Serial.begin(500000);
-  
-  mydisplay.shutdown(0, false);  // turns on display
-  mydisplay.setIntensity(0, 8); // 15 = brightest
-  mydisplay.clearDisplay(0);
-  mydisplay.setDigit(0, 0, 0, false);
-  mydisplay.setDigit(0, 1, 0, false);
-  mydisplay.setDigit(0, 2, 0, true);
-  mydisplay.setDigit(0, 3, 0, false);
-  mydisplay.setDigit(0, 4, 0, false);
-  mydisplay.setDigit(0, 5, 0, false);
-  mydisplay.setDigit(0, 6, 0, false);
-  mydisplay.setDigit(0, 7, 0, false);
+void initLCD(int bank)
+{
+  mydisplay.shutdown(bank, false);  // turns on display
+  mydisplay.setIntensity(bank, 8); // 15 = brightest
+  mydisplay.clearDisplay(bank);
 
-  mydisplay.shutdown(1, false);  // turns on display
-  mydisplay.setIntensity(1, 8); // 15 = brightest
-  mydisplay.clearDisplay(1);  
-  mydisplay.setDigit(1, 0, 0, false);
-  mydisplay.setDigit(1, 1, 0, false);
-  mydisplay.setDigit(1, 2, 0, true);
-  mydisplay.setDigit(1, 3, 0, false);
-  mydisplay.setDigit(1, 4, 0, false);
-  mydisplay.setDigit(1, 5, 0, false);
-  mydisplay.setDigit(1, 6, 0, false);
-  mydisplay.setDigit(1, 7, 0, false);
+  mydisplay.setChar(bank, 0, ' ', false);
+  mydisplay.setChar(bank, 1, ' ', false);
+  mydisplay.setChar(bank, 2, ' ', true);
+  mydisplay.setChar(bank, 3, ' ', false);
+  mydisplay.setChar(bank, 4, ' ', false);
+  mydisplay.setChar(bank, 5, ' ', false);
+  mydisplay.setChar(bank, 6, ' ', false);
+  mydisplay.setChar(bank, 7, ' ', false);
+}
+
+void setup() {
+  uhf_LastFunction = 0;
+  vhfAm_LastMode = 0;
+  vhfFm_LastMode = 0;
   
-  mydisplay.shutdown(2, false);  // turns on display
-  mydisplay.setIntensity(2, 8); // 15 = brightest
-  mydisplay.clearDisplay(2);  
-  mydisplay.setDigit(2, 0, 0, false);
-  mydisplay.setDigit(2, 1, 0, false);
-  mydisplay.setDigit(2, 2, 0, true);
-  mydisplay.setDigit(2, 3, 0, false);
-  mydisplay.setDigit(2, 4, 0, false);
-  mydisplay.setDigit(2, 5, 0, false);
-  mydisplay.setDigit(2, 6, 0, false);
-  mydisplay.setDigit(2, 7, 0, false);
+  initLCD(0);
+  initLCD(1);
+  initLCD(2);
+
+  DcsBios::setup();
+}
+
+void ConsiderRestartDisplay()
+{
+  if( uhf_LastFunction == 0 && vhfAm_LastMode == 0 && vhfFm_LastMode == 0 )
+  {
+    // All radios are off - Re-init the whole display controller
+    mydisplay = LedControl(26, 25, 24, 3);
+
+    initLCD(0);
+    initLCD(1);
+    initLCD(2);
+  }
 }
 
 /*
@@ -91,107 +100,27 @@ to detect changes in the state of connected controls and
 pass them on to DCS.
 */
 void loop() {
-  // feed incoming data to the parser
-  int data = Serial.read();
-  while (data > -1) {
-      parser.processChar(data);
-      data = Serial.read();
-  }
-  
-  // poll inputs
-  DcsBios::PollingInput::pollInputs();
+  DcsBios::loop();
 }
 
-/*
-You need to define
-void sendDcsBiosMessage(const char* msg, const char* arg)
-so that the string msg, followed by a space, the string arg
-and a newline gets sent to the DCS-BIOS import stream.
-
-In this example we send it to the serial port, so you need to
-run socat to read the data from the serial port and send it
-over UDP to DCS-BIOS.
-
-If you are using an Ethernet Shield, you would probably want
-to send a UDP packet from this subroutine.
-*/
-void sendDcsBiosMessage(const char* msg, const char* arg) {
-  Serial.write(msg);
-  Serial.write(' ');
-  Serial.write(arg);
-  Serial.write('\n');
+///////////////////////////////////////////////////////////////////
+// UHF (Mid)
+void onUhfFunctionChange(unsigned int newValue) {
+    if(newValue == 0)
+    {
+      // Radio is OFF
+      mydisplay.shutdown(0, true);
+      uhf_LastFunction = newValue;
+      ConsiderRestartDisplay();
+    }
+    else if( uhf_LastFunction == 0 )
+    {
+      // Radio is ON, but wasn't before
+      mydisplay.shutdown(0, false);
+      uhf_LastFunction = newValue;
+    }
 }
-
-/*
-This subroutine gets called every time a message is received
-from the export stream (you need to define it even if it
-does nothing).
-
-Use this to handle outputs which are not covered by the
-DcsBios Arduino library (e.g. displays).
-*/
-void onDcsBiosWrite(unsigned int address, unsigned int value) {
-  switch(address)
-  {
-    case 0x117c:
-    {
-      unsigned int uhfFunctionValue = (value & 0x000c) >> 2;
-      if( uhfFunctionValue == 0 )
-        mydisplay.clearDisplay(0);
-        
-      unsigned int vhfamPresetIntValue = ((value & 0xf800) >> 11)+1;
-      mydisplay.setDigit(1, 7, vhfamPresetIntValue%10, false);
-      mydisplay.setDigit(1, 6, vhfamPresetIntValue/10, false);
-
-    }
-    break;
-    // 112.344
-    case 0x118e:
-    {
-        unsigned int vhfamFreq1IntValue = ((value & 0x000f) >> 0)+3;
-        mydisplay.setDigit(1, 1, vhfamFreq1IntValue%10, false);
-        mydisplay.setDigit(1, 0, vhfamFreq1IntValue/10, false);
-
-        unsigned int vhfamFreq2Value = (value & 0x00f0) >> 4;
-        mydisplay.setDigit(1, 2, vhfamFreq2Value, true);
-        
-        unsigned int vhfamFreq3Value = (value & 0x0f00) >> 8;
-        mydisplay.setDigit(1, 3, vhfamFreq3Value, false);
-        
-        unsigned int vhfamFreq4IntValue = ((value & 0x7000) >> 12)*25;
-        mydisplay.setDigit(1, 5, vhfamFreq4IntValue%10, false);
-        mydisplay.setDigit(1, 4, vhfamFreq4IntValue/10, false);
-    }
-    break;
-    
-    case 0x1194:
-    {
-        unsigned int vhffmFreq1IntValue = ((value & 0x7800) >> 11) + 3;
-        mydisplay.setDigit(2, 1, vhffmFreq1IntValue%10, false);
-        mydisplay.setDigit(2, 0, vhffmFreq1IntValue/10, false);
-
-        unsigned int vhffmPresetIntValue = ((value & 0x001f) >> 0)+1;
-        mydisplay.setDigit(2, 7, vhffmPresetIntValue%10, false);
-        mydisplay.setDigit(2, 6, vhffmPresetIntValue/10, false);
-
-    }
-    break;
-    
-    case 0x119c:
-    {
-        unsigned int vhffmFreq2Value = (value & 0x000f) >> 0;
-        mydisplay.setDigit(2, 2, vhffmFreq2Value, true);
-
-        unsigned int vhffmFreq3Value = (value & 0x00f0) >> 4;
-        mydisplay.setDigit(2, 3, vhffmFreq3Value, false);
-
-        unsigned int vhffmFreq4IntValue = ((value & 0x0700) >> 8)*25;
-        mydisplay.setDigit(2, 5, vhffmFreq4IntValue%10, false);
-        mydisplay.setDigit(2, 4, vhffmFreq4IntValue/10, false);
-    }
-    break;
-  }
-}
+DcsBios::IntegerBuffer uhfFunctionBuffer(0x117c, 0x000c, 2, onUhfFunctionChange);
 
 void onUhfFrequencyChange(char* newValue)
 {
@@ -214,6 +143,168 @@ void onUhfPresetChange(char* newValue) {
 }
 DcsBios::StringBuffer<2> uhfPresetBuffer(0x1188, onUhfPresetChange);
 
-void onDcsBiosFrameSync()
-{
+
+
+
+///////////////////////////////////////////////////////////////////
+// VHF AM (Front)
+
+void onVhfamModeChange(unsigned int newValue) {
+    if(newValue == 0)
+    {
+      // Radio is OFF
+      mydisplay.shutdown(1, true);
+      vhfAm_LastMode = newValue;
+      ConsiderRestartDisplay();
+    }
+    else if( vhfAm_LastMode == 0 )
+    {
+      // Radio is ON, but wasn't before
+      mydisplay.shutdown(1, false);
+      vhfAm_LastMode = newValue;
+    }
 }
+DcsBios::IntegerBuffer vhfamModeBuffer(0x1186, 0x0300, 8, onVhfamModeChange);
+
+void onVhfamPresetChange(unsigned int newValue) {
+  // newValue is zero based but presets are 1 based
+  unsigned int preset = newValue + 1;
+  mydisplay.setDigit(1, 7, preset %10, false);
+  mydisplay.setDigit(1, 6, preset /10, false);
+}
+DcsBios::IntegerBuffer vhfamPresetBuffer(0x117c, 0xf800, 11, onVhfamPresetChange);
+
+void onVhfAmFrequencySChange(char* newValue) {
+  if( newValue[2] == '.' )
+  {
+    // ##.###
+    mydisplay.setChar(1, 0, ' ', false);
+    mydisplay.setChar(1, 1, newValue[0], false);
+    mydisplay.setChar(1, 2, newValue[1], true);
+    
+    mydisplay.setChar(1, 3, newValue[3], false);
+    mydisplay.setChar(1, 4, newValue[4], false);
+    mydisplay.setChar(1, 5, newValue[5], false);
+  }
+  else
+  {
+    // ###.###
+    mydisplay.setChar(1, 0, newValue[0], false);
+    mydisplay.setChar(1, 1, newValue[1], false);
+    mydisplay.setChar(1, 2, newValue[2], true);
+    
+    mydisplay.setChar(1, 3, newValue[4], false);
+    mydisplay.setChar(1, 4, newValue[5], false);
+    mydisplay.setChar(1, 5, newValue[6], false);
+  }
+}
+DcsBios::StringBuffer<7> vhfAmFrequencySBuffer(0x12de, onVhfAmFrequencySChange);
+
+/*void onVhfamFreq1RotChange(unsigned int newValue) {
+    // AM Freq1:Tens
+    unsigned int fTens = newValue + 3;
+    mydisplay.setDigit(1, 1, fTens %10, false);
+    mydisplay.setDigit(1, 0, fTens /10, false);
+}
+DcsBios::IntegerBuffer vhfamFreq1RotBuffer(0x11bc, 0x07f8, 3, onVhfamFreq1RotChange);
+
+void onVhfamFreq2RotChange(unsigned int newValue) {
+    mydisplay.setDigit(1, 2, newValue, true);
+}
+DcsBios::IntegerBuffer vhfamFreq2RotBuffer(0x12b8, 0x00ff, 0, onVhfamFreq2RotChange);
+
+void onVhfamFreq3RotChange(unsigned int newValue) {
+    mydisplay.setDigit(1, 3, newValue, false);    
+}
+DcsBios::IntegerBuffer vhfamFreq3RotBuffer(0x12b8, 0xff00, 8, onVhfamFreq3RotChange);
+
+void onVhfamFreq4RotChange(unsigned int newValue) {
+  // AM:Freq4:hundies
+    unsigned int fHundies = newValue;
+    mydisplay.setDigit(1, 5, fHundies%10, false);
+    mydisplay.setDigit(1, 4, fHundies/10, false);
+}
+DcsBios::IntegerBuffer vhfamFreq4RotBuffer(0x12ba, 0x00ff, 0, onVhfamFreq4RotChange);
+*/
+
+
+
+///////////////////////////////////////////////////////////////////
+// VHF FM (Rear)
+
+void onVhffmModeChange(unsigned int newValue) {
+    if(newValue == 0)
+    {
+      // Radio is OFF
+      mydisplay.shutdown(2, true);
+      vhfFm_LastMode = newValue;
+      ConsiderRestartDisplay();
+    }
+    else if( vhfFm_LastMode == 0 )
+    {
+      // Radio is ON, but wasn't before
+      mydisplay.shutdown(2, false);
+      vhfFm_LastMode = newValue;
+    }
+}
+DcsBios::IntegerBuffer vhffmModeBuffer(0x1194, 0x0060, 5, onVhffmModeChange);
+
+void onVhffmPresetChange(unsigned int newValue) {
+  // newValue is zero based but presets are 1 based
+    unsigned int preset = newValue + 1;
+    mydisplay.setDigit(2, 7, preset%10, false);
+    mydisplay.setDigit(2, 6, preset/10, false);
+}
+DcsBios::IntegerBuffer vhffmPresetBuffer(0x1194, 0x001f, 0, onVhffmPresetChange);
+
+void onVhfFmFrequencySChange(char* newValue) {
+  if( newValue[2] == '.' )
+  {
+    // ##.###
+    mydisplay.setChar(2, 0, ' ', false);
+    mydisplay.setChar(2, 1, newValue[0], false);
+    mydisplay.setChar(2, 2, newValue[1], true);
+    
+    mydisplay.setChar(2, 3, newValue[3], false);
+    mydisplay.setChar(2, 4, newValue[4], false);
+    mydisplay.setChar(2, 5, newValue[5], false);
+  }
+  else
+  {
+    // ###.###
+    mydisplay.setChar(2, 0, newValue[0], false);
+    mydisplay.setChar(2, 1, newValue[1], false);
+    mydisplay.setChar(2, 2, newValue[2], true);
+    
+    mydisplay.setChar(2, 3, newValue[4], false);
+    mydisplay.setChar(2, 4, newValue[5], false);
+    mydisplay.setChar(2, 5, newValue[6], false);
+  }
+}
+DcsBios::StringBuffer<7> vhfFmFrequencySBuffer(0x12e6, onVhfFmFrequencySChange);
+
+/*
+void onVhffmFreq1RotChange(unsigned int newValue) {
+    unsigned int fTens = newValue - 3;
+    mydisplay.setDigit(2, 1, fTens %10, false);
+    mydisplay.setDigit(2, 0, fTens/10, false);
+}
+DcsBios::IntegerBuffer vhffmFreq1RotBuffer(0x12ba, 0xff00, 8, onVhffmFreq1RotChange);
+
+void onVhffmFreq2RotChange(unsigned int newValue) {
+  mydisplay.setDigit(2, 2, newValue, true);
+}
+DcsBios::IntegerBuffer vhffmFreq2RotBuffer(0x12bc, 0x00ff, 0, onVhffmFreq2RotChange);
+
+void onVhffmFreq3RotChange(unsigned int newValue) {
+    mydisplay.setDigit(2, 3, newValue, false);
+}
+DcsBios::IntegerBuffer vhffmFreq3RotBuffer(0x12bc, 0xff00, 8, onVhffmFreq3RotChange);
+
+void onVhffmFreq4RotChange(unsigned int newValue) {
+    unsigned int fHundies = newValue;
+    mydisplay.setDigit(2, 5, fHundies%10, false);
+    mydisplay.setDigit(2, 4, fHundies/10, false);
+}
+DcsBios::IntegerBuffer vhffmFreq4RotBuffer(0x12be, 0x00ff, 0, onVhffmFreq4RotChange);
+*/
