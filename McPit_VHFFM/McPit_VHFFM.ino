@@ -3,11 +3,7 @@
 #include <DcsBios.h>
 #include <Servo.h>
 
-// For C:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\usb_serial_hid\usb_private.h
-/*
-#define PRODUCT_ID		0x0493
-#define STR_PRODUCT             L"McPIT-VHF"
-*/
+// Reminder: Run ConfigureDevice.cmd elevated first to set USB device IDs
 
 /**** VHF FM Radio 19D 1A ****/
 DcsBios::RotaryEncoder vhffmFreq1("VHFFM_FREQ1", "DEC", "INC", 3, 2);
@@ -33,8 +29,6 @@ DcsBios::RotaryEncoder vhfamPreset("VHFAM_PRESET", "DEC", "INC", 16, 17);  //REV
 DcsBios::Switch3Pos vhfamSquelch("VHFAM_SQUELCH", 14, 15);  // OK1
 DcsBios::Potentiometer vhfamVol("VHFAM_VOL", 44);  // OK1
 
-// Teensy++ 2.0: 46 IO
-
 /* Instantiate a ProtocolParser object to parse the DCS-BIOS export stream */
 DcsBios::ProtocolParser parser;
 
@@ -45,4 +39,3 @@ void setup() {
 void loop() {
   DcsBios::loop();
 }
-
