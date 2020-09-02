@@ -1,7 +1,6 @@
 #define DCSBIOS_DEFAULT_SERIAL
 
 #include <DcsBios.h>
-#include <Servo.h>
 
 // Reminder: Run ConfigureDevice.cmd elevated first to set USB device IDs
 
