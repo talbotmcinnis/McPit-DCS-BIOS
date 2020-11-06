@@ -1,20 +1,12 @@
-//#define DCSBIOS_IRQ_SERIAL
 #define DCSBIOS_DEFAULT_SERIAL
 
-// Because we need each device to be unique, we must change the product_ID in C:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\usb_serial_hid\usb_private.h
-// before each compilation
-/*
-#define STR_PRODUCT             L"MCPIT-NMSP"
-#define PRODUCT_ID    0x0490
-*/
+#include <DcsBios.h>
 
-#include <DcsBios.h> // Originally build for DCS Bios 0.1.x  Update For 0.2.11
-#include <Servo.h>
+// Reminder: Run ConfigureDevice.cmd elevated first to set USB device IDs
 
 // TODO: Extract this into my own library?
 #include "Arduino.h"
 #include <internal/PollingInput.h>
-
 
 namespace DcsBios {
   /* Forked off Dcs Rotary Encoder, but trying to include filtering of the glitches my rotary present
@@ -117,18 +109,17 @@ DcsBios::Switch2Pos emerBrake("EMER_BRAKE", 25);
 DcsBios::ActionButton saiCageToggle("SAI_CAGE", "TOGGLE", 24);
 DcsBios::RotaryEncoder saiPitchTrim("SAI_PITCH_TRIM", "-3200", "+3200", 22, 23);
 
+DcsBios::Switch3Pos hmcsPw("A102_HMCS_PW", 15, 16);
+DcsBios::Switch2Pos boardingLadderExtend("LADDER_EXTEND", 14);
+DcsBios::Switch3Pos aapSteer("AAP_STEER", 12, 13);
+
 /* Instantiate a ProtocolParser object to parse the DCS-BIOS export stream */
 DcsBios::ProtocolParser parser;
 
 void setup() {
-  pinMode(26, INPUT_PULLUP);
-  
   DcsBios::setup();
 }
 
 void loop() {
   DcsBios::loop();
-
-  // Not sure what I was trying here.  Maybe just an experiment?
-  Joystick.button(1, !digitalRead(26));
 }
