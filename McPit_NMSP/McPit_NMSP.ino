@@ -109,18 +109,17 @@ DcsBios::Switch2Pos emerBrake("EMER_BRAKE", 25);
 DcsBios::ActionButton saiCageToggle("SAI_CAGE", "TOGGLE", 24);
 DcsBios::RotaryEncoder saiPitchTrim("SAI_PITCH_TRIM", "-3200", "+3200", 22, 23);
 
+DcsBios::Switch3Pos hmcsPw("A102_HMCS_PW", 15, 16);
+DcsBios::Switch2Pos boardingLadderExtend("LADDER_EXTEND", 14);
+DcsBios::Switch3Pos aapSteer("AAP_STEER", 12, 13);
+
 /* Instantiate a ProtocolParser object to parse the DCS-BIOS export stream */
 DcsBios::ProtocolParser parser;
 
 void setup() {
-  pinMode(26, INPUT_PULLUP);
-  
   DcsBios::setup();
 }
 
 void loop() {
   DcsBios::loop();
-
-  // Not sure what I was trying here.  Maybe just an experiment?
-  Joystick.button(1, !digitalRead(26));
 }
