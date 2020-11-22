@@ -1,59 +1,7 @@
 #define DCSBIOS_DEFAULT_SERIAL
-
-// Because we need each device to be unique, we must change the product_ID in C:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\usb_serial_hid\usb_private.h
-// before each compilation
-/*
-#define STR_PRODUCT             L"McPit - IFF"
-#define PRODUCT_ID    0x0495  // McPit - IFF
-*/
-
 #include <DcsBios.h>
 
-namespace DcsBios {
-
-class BcdWheel : PollingInput {
-    private:
-      const char* msg_;
-      char pinA_;
-      char pinB_;
-      char pinC_;
-      char lastState_;
-      char readState() {
-        int total = 0;
-        if (digitalRead(pinA_) == LOW) {total+=1;}
-        if (digitalRead(pinB_) == LOW) {total+=2;}
-        if( pinC_ ) {
-          if (digitalRead(pinC_) == LOW) 
-          {total+=4;}
-        }
-    
-        return total;
-      }
-      
-      void pollInput() {
-        char state = readState();
-        if (state != lastState_) {
-          char szBody[2];
-          szBody[0] = state+48;
-          szBody[1] = 0;
-          if (tryToSendDcsBiosMessage(msg_, szBody))
-              lastState_ = state;
-        }
-      }
-      
-    public:
-      BcdWheel(const char* msg, char pinA, char pinB, char pinC = 0){
-        msg_ = msg;
-        pinA_ = pinA;
-        pinB_ = pinB;
-        pinC_ = pinC;
-        pinMode(pinA_, INPUT_PULLUP);
-        pinMode(pinB_, INPUT_PULLUP);
-        pinMode(pinC_, INPUT_PULLUP);
-        lastState_ = readState();
-      }
-  };
-}
+/// Reminder: Run ConfigureDevice.cmd elevated first to set USB device IDs
 
 /**** IFF ****/
 
@@ -137,14 +85,11 @@ void setup() {
 }
 
 void loop() {
-  /*
-  int emerg = digitalRead(5);
-  if( emerg )
-    tryToSendDcsBiosMessage("IFF_MASTER", "4");
-
-  int norm = digitalRead(6);
-  if( norm )
-    tryToSendDcsBiosMessage("IFF_MASTER", "3");
-  */
   DcsBios::loop();
 }
+
+void onAcftNameChange(char* newValue) {
+  // Change of Aircraft
+  DcsBios::resetAllStates();
+}
+DcsBios::StringBuffer<24> AcftNameBuffer(0x0000, onAcftNameChange);
