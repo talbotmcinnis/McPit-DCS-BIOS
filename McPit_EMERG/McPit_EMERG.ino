@@ -9,8 +9,10 @@ const int NC_PIN = 36;
 /**** Emergency ****/
 DcsBios::Switch3Pos efcpAileronEmerDisengage("EFCP_AILERON_EMER_DISENGAGE", 7, 8);
 DcsBios::Switch3Pos efcpElevatorEmerDisengage("EFCP_ELEVATOR_EMER_DISENGAGE", 10, 9);
-const byte efcpEmerTrimPins[5] = {NC_PIN, 2, 1, 3, 0};
+
+const byte efcpEmerTrimPins[5] = {DcsBios::PIN_NC, 2, 1, 3, 0};
 DcsBios::SwitchMultiPos efcpEmerTrim("EFCP_EMER_TRIM", efcpEmerTrimPins, 5);
+
 DcsBios::Switch2Pos efcpFlapsEmerRetr("EFCP_FLAPS_EMER_RETR", 5);
 DcsBios::Switch2Pos efcpMrfcs("EFCP_MRFCS", 4, true);
 DcsBios::Switch2Pos efcpSpdbkEmerRetr("EFCP_SPDBK_EMER_RETR", 27);
