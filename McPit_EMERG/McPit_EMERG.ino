@@ -70,11 +70,22 @@ void loop() {
   DcsBios::loop();
 }
 
-unsigned long uLastAircraftChange=0;
+unsigned long uLastModelTimeS = -1; // Start big, to ensure the first step triggers a resync
 
-void onAcftNameChange(char* newValue) {
-  // Change of Aircraft
-  uLastAircraftChange = millis();
-  DcsBios::resetAllStates();
+void onModTimeChange(char* newValue) {
+  unsigned long currentModelTimeS = atol(newValue);
+
+  if( currentModelTimeS < uLastModelTimeS )
+  {
+    if( currentModelTimeS > 10 )// Intentional delay to give time for DCS to finish loading and become stable
+    {
+      DcsBios::resetAllStates();
+      uLastModelTimeS = currentModelTimeS;
+    }
+  }
+  else
+  {
+    uLastModelTimeS = currentModelTimeS;
+  }
 }
-DcsBios::StringBuffer<24> AcftNameBuffer(0x0000, onAcftNameChange);
+DcsBios::StringBuffer<5> modTimeBuffer(0x043e, onModTimeChange);
