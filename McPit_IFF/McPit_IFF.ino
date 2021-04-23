@@ -9,8 +9,12 @@
 const int PIN_X = 36;
 
 //IFF Code: ZERO - B - A - (HOLD)
-const byte iffCodePins[4] = {2,1,0,27};
-DcsBios::SwitchMultiPos iffCode("IFF_CODE", iffCodePins, 4);
+// This is what it SHOULD be, BUT DCS does it with INC/DEC, so I have a hack below
+//const byte iffCodePins[4] = {2,1,0,27};
+//DcsBios::SwitchMultiPos iffCode("IFF_CODE", iffCodePins, 4);
+//DcsBios::RotaryEncoder iffCode("IFF_CODE", "DEC", "INC", 27, 2);
+DcsBios::ActionButton iffDec("IFF_CODE", "INC", 1);
+DcsBios::ActionButton iffInc("IFF_CODE", "DEC", 27);
 
 // IFF Master: OFF - STBY - LOW - NORM - EMER
 const byte iffMasterPins[5] = {8, 7, PIN_X, 34, 5};
