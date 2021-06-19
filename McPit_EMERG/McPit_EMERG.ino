@@ -70,14 +70,14 @@ void loop() {
   DcsBios::loop();
 }
 
-unsigned long uLastModelTimeS = -1; // Start big, to ensure the first step triggers a resync
+unsigned long uLastModelTimeS = 0xFFFFFFFF; // Start big, to ensure the first step triggers a resync
 
 void onModTimeChange(char* newValue) {
   unsigned long currentModelTimeS = atol(newValue);
 
   if( currentModelTimeS < uLastModelTimeS )
   {
-    if( currentModelTimeS > 10 )// Intentional delay to give time for DCS to finish loading and become stable
+    if( currentModelTimeS > 20 )// Intentional delay to give time for DCS to finish loading and become stable
     {
       DcsBios::resetAllStates();
       uLastModelTimeS = currentModelTimeS;
