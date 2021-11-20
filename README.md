@@ -25,3 +25,5 @@ Note: There are build warnings about something like PRR being defined twice.  Do
 
 "Caution" "0x0496"
 
+"TCN_ILS" "0x0497"
+
