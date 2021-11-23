@@ -20,14 +20,14 @@ TM1637 ils_led(21, 20);
 void setup()
 {
   ils_led.begin();
-  ils_led.setBrightness(1);
-  ils_led.display("123.456");
+  ils_led.setBrightness(2);
+  ils_led.display("0.00000");
 
   Wire.begin(); //Join I2C bus
   tcn_led.begin(0x70,1);
   tcn_led.setDigits(4);
   tcn_led.setBrightness(0);  // 0 to 15
-  tcn_led.print("--- ");
+  tcn_led.print("MCPT");
   
   DcsBios::setup();
 }
@@ -37,7 +37,7 @@ void loop()
   DcsBios::loop();
 }
 
-// TODO: Hysterisis on my volumes
+typedef DcsBios::PotentiometerEWMA<POLL_EVERY_TIME, 4096> MyLowResponsePotentiometer;
 
 void onAcftNameChange(char* newValue) {
   // Change of Aircraft
@@ -45,32 +45,30 @@ void onAcftNameChange(char* newValue) {
 }
 DcsBios::StringBuffer<24> AcftNameBuffer(0x0000, onAcftNameChange);
 
-McRotary tacan1("TACAN_1", "DEC", "INC", 16, 17);
-
 McRotary tacan10("TACAN_10", "DEC", "INC", 2, 3);
-
-//DcsBios::Switch2Pos tacanXy("TACAN_XY", 4);
-DcsBios::ActionButton tacanXyToggle("TACAN_XY", "TOGGLE", 4);
+McRotary tacan1("TACAN_1", "DEC", "INC", 4, 5);
+DcsBios::ActionButton tacanXyToggle("TACAN_XY", "TOGGLE", 7);
 
 void onTacanChannelChange(char* newValue) {
+    if( newValue[0] == '0' )
+      newValue[0] = ' ';
+
     tcn_led.print(newValue);
 }
 DcsBios::StringBuffer<4> tacanChannelBuffer(0x1162, onTacanChannelChange);
 
+MyLowResponsePotentiometer tacanVol("TACAN_VOL", A0, true);
 
-
-const byte tacanModePins[5] = {5, 6, 7, 8, 9};
+const byte tacanModePins[5] = {8, 9, 10, 11, 12};
 DcsBios::SwitchMultiPos tacanMode("TACAN_MODE", tacanModePins, 5);
-
-//DcsBios::Potentiometer tacanVol("TACAN_VOL", A0);
 
 DcsBios::Switch2Pos ilsPwr("ILS_PWR", 26);
 
-//DcsBios::Potentiometer ilsVol("ILS_VOL", A1);
+MyLowResponsePotentiometer ilsVol("ILS_VOL", A1, true);
 
-McRotary ilsKhz("ILS_KHZ", "DEC", "INC", 25,24);
+McRotary ilsMhz("ILS_MHZ", "DEC", "INC", 25, 24);
 
-McRotary ilsMhz("ILS_MHZ", "DEC", "INC", 23, 22);
+McRotary ilsKhz("ILS_KHZ", "DEC", "INC", 23,22);
 
 char ilsBuffer[8];
 void onIlsFrequencySChange(char* newValue) {
