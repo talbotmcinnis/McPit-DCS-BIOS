@@ -24,7 +24,7 @@ const byte uhfModePins[3] = {0, 1, 2};
 DcsBios::SwitchMultiPos uhfMode("UHF_MODE", uhfModePins, 3);
 DcsBios::Switch2Pos uhfSquelch("UHF_SQUELCH", 21);
 DcsBios::Switch2Pos uhfStatus("UHF_STATUS", 22);
-DcsBios::Switch2Pos uhfTest("UHF_TEST", 23);
+DcsBios::Switch2Pos uhfTest("UHF_TEST", 23, true);
 //DcsBios::Switch3Pos uhfTTone("UHF_T_TONE", PIN_A, PIN_B);  // No Function
 McPitPot uhfVol("UHF_VOL", 39);
 
