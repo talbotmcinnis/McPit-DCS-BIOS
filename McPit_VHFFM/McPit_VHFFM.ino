@@ -21,14 +21,15 @@ DcsBios::Switch3Pos vhffmSquelch("VHFFM_SQUELCH", 41, 40);  // OK1
 McPitPot vhffmVol("VHFFM_VOL", 45); // NO CHANGE
 
 /**** VHF AM Radio 13D 1A ****/
-McPitRotary vhfamFreq1("VHFAM_FREQ1", "DEC", "INC", 20, 19);
-McPitRotary vhfamFreq2("VHFAM_FREQ2", "DEC", "INC", 22, 21);
-McPitRotary vhfamFreq3("VHFAM_FREQ3", "DEC", "INC", 24, 23);
-McPitRotary vhfamFreq4("VHFAM_FREQ4", "DEC", "INC", 26, 25);
-DcsBios::Switch2Pos vhfamLoad("VHFAM_LOAD", 18);      // OK1
-McPitRotary vhfamPreset("VHFAM_PRESET", "DEC", "INC", 16, 17);
-DcsBios::Switch3Pos vhfamSquelch("VHFAM_SQUELCH", 14, 15);  // OK1
-McPitPot vhfamVol("VHFAM_VOL", 44);  // OK1
+// Retasked as poor man's ARC-210 for now
+McPitRotary vhfamFreq1("ARC210_100MHZ_SEL", "DEC", "INC", 20, 19);
+McPitRotary vhfamFreq2("ARC210_10MHZ_SEL", "DEC", "INC", 22, 21);
+McPitRotary vhfamFreq3("ARC210_1MHZ_SEL", "DEC", "INC", 24, 23);
+McPitRotary vhfamFreq4("ARC210_100KHZ_SEL", "DEC", "INC", 26, 25);
+//DcsBios::Switch2Pos vhfamLoad("VHFAM_LOAD", 18);      // OK1
+McPitRotary vhfamPreset("ARC210_CHN_KNB", "DEC", "INC", 16, 17);
+DcsBios::Switch3Pos vhfamSquelch("ARC210_SQUELCH", 14, 15);  // OK1
+//McPitPot vhfamVol("VHFAM_VOL", 44);  // OK1
 
 /* Instantiate a ProtocolParser object to parse the DCS-BIOS export stream */
 DcsBios::ProtocolParser parser;
