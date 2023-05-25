@@ -27,7 +27,7 @@ McPitRotary vhfamFreq2("ARC210_10MHZ_SEL", "DEC", "INC", 22, 21);
 McPitRotary vhfamFreq3("ARC210_1MHZ_SEL", "DEC", "INC", 24, 23);
 McPitRotary vhfamFreq4("ARC210_100KHZ_SEL", "DEC", "INC", 26, 25);
 //DcsBios::Switch2Pos vhfamLoad("VHFAM_LOAD", 18);      // OK1
-McPitRotary vhfamPreset("ARC210_CHN_KNB", "DEC", "INC", 16, 17);
+McPitRotary vhfamPreset("ARC210_CHN_KNB", "-3200", "+3200", 16, 17);
 DcsBios::Switch3Pos vhfamSquelch("ARC210_SQUELCH", 14, 15);  // OK1
 //McPitPot vhfamVol("VHFAM_VOL", 44);  // OK1
 
