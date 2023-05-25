@@ -24,14 +24,22 @@ const byte uhfModePins[3] = {0, 1, 2};
 DcsBios::SwitchMultiPos uhfMode("UHF_MODE", uhfModePins, 3);
 DcsBios::Switch2Pos uhfSquelch("UHF_SQUELCH", 21);
 DcsBios::Switch2Pos uhfStatus("UHF_STATUS", 22);
-DcsBios::Switch2Pos uhfTest("UHF_TEST", 23, true);
+DcsBios::Switch2Pos uhfTest("UHF_TEST", 23);
 //DcsBios::Switch3Pos uhfTTone("UHF_T_TONE", PIN_A, PIN_B);  // No Function
 McPitPot uhfVol("UHF_VOL", 39);
 
-//const byte vhfamFreqemerPins[4] = {42, 41, 40, 38};
+//const byte vhfamFreqemerPins[4] = {42, 41, 40, 38}; // 38 - EMER, 40 - AM, 41 - MAN, 42 - PRE
 //DcsBios::SwitchMultiPos vhfamFreqemer("VHFAM_FREQEMER", vhfamFreqemerPins, 4);
+// ARC-210 0=ECCMMASTER 1=EECM 2=PRST 3=MAN 4=MAR 5=243 6=121
+//const byte arc210SecSwPins[7] = {DcsBios::PIN_NC, DcsBios::PIN_NC, 42, 41, 40, 38, 38};
+const byte arc210SecSwPins[7] = {36, 36, 38, 40, 41, 36, 42};
+DcsBios::SwitchMultiPos arc210SecSw("ARC210_SEC_SW", arc210SecSwPins, 7);
+
 //const byte vhfamModePins[3] = {43, 44, 45};
 //DcsBios::SwitchMultiPos vhfamMode("VHFAM_MODE", vhfamModePins, 3);
+// ARC-210 master is on the left
+const byte arc210MasterPins[7] = {43, 44, DcsBios::PIN_NC, 45, DcsBios::PIN_NC, DcsBios::PIN_NC, DcsBios::PIN_NC};
+DcsBios::SwitchMultiPos arc210Master("ARC210_MASTER", arc210MasterPins, 7);
 
 // inputs: DIN pin, CLK pin, LOAD pin. number of chips
 LedControl mydisplay = LedControl(26, 25, 24, 3);
