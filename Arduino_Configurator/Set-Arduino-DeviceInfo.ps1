@@ -1,7 +1,7 @@
 Param(
     $DeviceName,
     $ProductId = "0x0487",
-    $usb_private_path = "C:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\usb_serial_hid\usb_private.h"
+    $usb_private_path = "C:\Users\whatm\AppData\Local\Arduino15\packages\teensy\hardware\avr\1.58.1\cores\usb_serial\usb_private.h"
 )
 
 # Debug command line: .\Set-Arduino-DeviceInfo.ps1 "IFF" "0x0488" .\usb_private.h
