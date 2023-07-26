@@ -1,6 +1,6 @@
 #define DCSBIOS_DEFAULT_SERIAL
 #include <LedControl.h>
-#include <DcsBios.h> // Originally build for DCS Bios 0.1.x  Update For 0.2.11
+#include <DcsBios.h> // Originally built for DCS Bios 0.1.x  Update For 0.2.11
 
 /// Reminder: Run ConfigureDevice.cmd elevated first to set USB device IDs
 
@@ -24,14 +24,23 @@ const byte uhfModePins[3] = {0, 1, 2};
 DcsBios::SwitchMultiPos uhfMode("UHF_MODE", uhfModePins, 3);
 DcsBios::Switch2Pos uhfSquelch("UHF_SQUELCH", 21);
 DcsBios::Switch2Pos uhfStatus("UHF_STATUS", 22);
-DcsBios::Switch2Pos uhfTest("UHF_TEST", 23);
+//DcsBios::Switch2Pos uhfTest("UHF_TEST", 23);
+DcsBios::ActionButton uhfTestToggle("UHF_TEST", "TOGGLE", 23);
 //DcsBios::Switch3Pos uhfTTone("UHF_T_TONE", PIN_A, PIN_B);  // No Function
 McPitPot uhfVol("UHF_VOL", 39);
 
-const byte vhfamFreqemerPins[4] = {42, 41, 40, 38};
-DcsBios::SwitchMultiPos vhfamFreqemer("VHFAM_FREQEMER", vhfamFreqemerPins, 4);
-const byte vhfamModePins[3] = {43, 44, 45};
-DcsBios::SwitchMultiPos vhfamMode("VHFAM_MODE", vhfamModePins, 3);
+//const byte vhfamFreqemerPins[4] = {42, 41, 40, 38}; // 38 - EMER, 40 - AM, 41 - MAN, 42 - PRE
+//DcsBios::SwitchMultiPos vhfamFreqemer("VHFAM_FREQEMER", vhfamFreqemerPins, 4);
+// ARC-210 0=ECCMMASTER 1=EECM 2=PRST 3=MAN 4=MAR 5=243 6=121
+//const byte arc210SecSwPins[7] = {DcsBios::PIN_NC, DcsBios::PIN_NC, 42, 41, 40, 38, 38};
+const byte arc210SecSwPins[7] = {36, 36, 38, 40, 41, 36, 42};
+DcsBios::SwitchMultiPos arc210SecSw("ARC210_SEC_SW", arc210SecSwPins, 7);
+
+//const byte vhfamModePins[3] = {43, 44, 45};
+//DcsBios::SwitchMultiPos vhfamMode("VHFAM_MODE", vhfamModePins, 3);
+// ARC-210 master is on the left
+const byte arc210MasterPins[7] = {43, 44, DcsBios::PIN_NC, 45, DcsBios::PIN_NC, DcsBios::PIN_NC, DcsBios::PIN_NC};
+DcsBios::SwitchMultiPos arc210Master("ARC210_MASTER", arc210MasterPins, 7);
 
 // inputs: DIN pin, CLK pin, LOAD pin. number of chips
 LedControl mydisplay = LedControl(26, 25, 24, 3);
@@ -68,6 +77,8 @@ void setup() {
   initLCD(1);
   initLCD(2);
 
+  //onVhfFmFrequencySChange("12.345");
+
   DcsBios::setup();
 }
 
@@ -99,7 +110,18 @@ void onUhfFrequencyChange(char* newValue)
     mydisplay.setDigit(0, 0, 0xA, false);
   else
     mydisplay.setDigit(0, 0, newValue[0]-48, false);
-    
+
+  // Handle asterisks
+  if( newValue[0] == 42 )
+  {
+    mydisplay.setChar(0, 0, '-', false);
+    mydisplay.setChar(0, 1, '-', false);
+    mydisplay.setChar(0, 2, '-', true);
+    mydisplay.setChar(0, 3, '-', false);
+    mydisplay.setChar(0, 4, '-', false);
+    mydisplay.setChar(0, 5, '-', false);
+    return;
+  }
   mydisplay.setDigit(0, 1, newValue[1]-48, false);
   mydisplay.setDigit(0, 2, newValue[2]-48, true);
   mydisplay.setDigit(0, 3, newValue[4]-48, false);
@@ -109,46 +131,18 @@ void onUhfFrequencyChange(char* newValue)
 DcsBios::StringBuffer<7> uhfFrequencyBuffer(0x1180, onUhfFrequencyChange);
 
 void onUhfPresetChange(char* newValue) {
+  // Handle asterisks
+  if( newValue[0] == 42 )
+  {
+      mydisplay.setChar(0, 6, '-', false);
+      mydisplay.setChar(0, 7, '-', false);
+      return;
+  }
+  
   mydisplay.setDigit(0, 6, newValue[0]-48, false);
   mydisplay.setDigit(0, 7, newValue[1]-48, false);
 }
 DcsBios::StringBuffer<2> uhfPresetBuffer(0x1188, onUhfPresetChange);
-
-///////////////////////////////////////////////////////////////////
-// VHF AM (Front)
-void onVhfamPresetChange(unsigned int newValue) {
-  // newValue is zero based but presets are 1 based
-  unsigned int preset = newValue + 1;
-  mydisplay.setDigit(1, 7, preset %10, false);
-  mydisplay.setDigit(1, 6, preset /10, false);
-}
-DcsBios::IntegerBuffer vhfamPresetBuffer(0x117c, 0xf800, 11, onVhfamPresetChange);
-
-void onVhfAmFrequencySChange(char* newValue) {
-  if( newValue[2] == '.' )
-  {
-    // ##.###
-    mydisplay.setChar(1, 0, ' ', false);
-    mydisplay.setChar(1, 1, newValue[0], false);
-    mydisplay.setChar(1, 2, newValue[1], true);
-    
-    mydisplay.setChar(1, 3, newValue[3], false);
-    mydisplay.setChar(1, 4, newValue[4], false);
-    mydisplay.setChar(1, 5, newValue[5], false);
-  }
-  else
-  {
-    // ###.###
-    mydisplay.setChar(1, 0, newValue[0], false);
-    mydisplay.setChar(1, 1, newValue[1], false);
-    mydisplay.setChar(1, 2, newValue[2], true);
-    
-    mydisplay.setChar(1, 3, newValue[4], false);
-    mydisplay.setChar(1, 4, newValue[5], false);
-    mydisplay.setChar(1, 5, newValue[6], false);
-  }
-}
-DcsBios::StringBuffer<7> vhfAmFrequencySBuffer(0x12de, onVhfAmFrequencySChange);
 
 ///////////////////////////////////////////////////////////////////
 // VHF FM (Rear)
@@ -158,7 +152,7 @@ void onVhffmPresetChange(unsigned int newValue) {
     mydisplay.setDigit(2, 7, preset%10, false);
     mydisplay.setDigit(2, 6, preset/10, false);
 }
-DcsBios::IntegerBuffer vhffmPresetBuffer(0x1194, 0x001f, 0, onVhffmPresetChange);
+DcsBios::IntegerBuffer vhffmPresetBuffer(0x117c, 0xf800, 11, onVhffmPresetChange);
 
 void onVhfFmFrequencySChange(char* newValue) {
   if( newValue[2] == '.' )
@@ -184,4 +178,17 @@ void onVhfFmFrequencySChange(char* newValue) {
     mydisplay.setChar(2, 5, newValue[6], false);
   }
 }
-DcsBios::StringBuffer<7> vhfFmFrequencySBuffer(0x12e6, onVhfFmFrequencySChange);
+DcsBios::StringBuffer<7> vhfFmFrequencySBuffer(0x1354, onVhfFmFrequencySChange);
+
+void onArc210FrequencyChange(char* newValue)
+{
+    mydisplay.setChar(1, 0, newValue[0], false);
+    mydisplay.setChar(1, 1, newValue[1], false);
+    mydisplay.setChar(1, 2, newValue[2], true);
+    
+    mydisplay.setChar(1, 3, newValue[4], false);
+    mydisplay.setChar(1, 4, newValue[5], false);
+    mydisplay.setChar(1, 5, newValue[6], false);
+}
+
+ DcsBios::StringBuffer<7> arc210FrequencyBuffer(0x136e, onArc210FrequencyChange);
