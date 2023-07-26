@@ -24,7 +24,8 @@ const byte uhfModePins[3] = {0, 1, 2};
 DcsBios::SwitchMultiPos uhfMode("UHF_MODE", uhfModePins, 3);
 DcsBios::Switch2Pos uhfSquelch("UHF_SQUELCH", 21);
 DcsBios::Switch2Pos uhfStatus("UHF_STATUS", 22);
-DcsBios::Switch2Pos uhfTest("UHF_TEST", 23);
+//DcsBios::Switch2Pos uhfTest("UHF_TEST", 23);
+DcsBios::ActionButton uhfTestToggle("UHF_TEST", "TOGGLE", 23);
 //DcsBios::Switch3Pos uhfTTone("UHF_T_TONE", PIN_A, PIN_B);  // No Function
 McPitPot uhfVol("UHF_VOL", 39);
 
@@ -75,6 +76,8 @@ void setup() {
   initLCD(0);
   initLCD(1);
   initLCD(2);
+
+  //onVhfFmFrequencySChange("12.345");
 
   DcsBios::setup();
 }
@@ -175,4 +178,17 @@ void onVhfFmFrequencySChange(char* newValue) {
     mydisplay.setChar(2, 5, newValue[6], false);
   }
 }
-DcsBios::StringBuffer<7> vhfFmFrequencySBuffer(0x12ce, onVhfFmFrequencySChange);
+DcsBios::StringBuffer<7> vhfFmFrequencySBuffer(0x1354, onVhfFmFrequencySChange);
+
+void onArc210FrequencyChange(char* newValue)
+{
+    mydisplay.setChar(1, 0, newValue[0], false);
+    mydisplay.setChar(1, 1, newValue[1], false);
+    mydisplay.setChar(1, 2, newValue[2], true);
+    
+    mydisplay.setChar(1, 3, newValue[4], false);
+    mydisplay.setChar(1, 4, newValue[5], false);
+    mydisplay.setChar(1, 5, newValue[6], false);
+}
+
+ DcsBios::StringBuffer<7> arc210FrequencyBuffer(0x136e, onArc210FrequencyChange);
